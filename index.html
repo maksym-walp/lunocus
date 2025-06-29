@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Інтерактивний Аудит Лору: Мундіс</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Ancient Scroll -->
+    <!-- Application Structure Plan: The SPA uses a sidebar navigation for thematic sections (Cosmology, Chronology, etc.) and a dynamic main content area. This non-linear structure allows users to jump to specific topics of interest, which is more efficient than scrolling through a linear report. Key information is presented through interactive components: a bar chart for ruler timelines and a visual diagram for ethnogenesis. This approach enhances understanding by visualizing relationships and allowing users to actively explore the data, rather than passively reading it. The main goal is to transform the static audit into an engaging exploratory tool. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: Contradictions in cosmology. Goal: Inform. Viz/Presentation: Side-by-side cards for comparison. Interaction: Click to reveal resolved explanation. Justification: Clearly highlights the conflict and its resolution. Library/Method: HTML/CSS.
+        - Report Info: Table of ruler chronologies. Goal: Compare reigns and show time conflicts. Viz/Presentation: Interactive horizontal bar chart. Interaction: Hover/click on bars to display details. Justification: More intuitive and visually engaging for comparing time periods than a static table. Library/Method: Chart.js/Canvas.
+        - Report Info: Table of racial origins (ethnogenesis). Goal: Organize complex relationships. Viz/Presentation: Flowchart-style diagram. Interaction: Clickable nodes reveal detailed descriptions. Justification: Visually untangles complex, nested ancestries, making them easier to follow. Library/Method: HTML/CSS/JS.
+        - Report Info: Geopolitical paradoxes (seafaring). Goal: Compare conflicting facts. Viz/Presentation: Side-by-side cards. Interaction: Click to reveal resolution. Justification: Presents the paradox directly to the user, encouraging critical thinking before showing the answer. Library/Method: HTML/CSS.
+        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDF6E3; /* Creamy beige background */
+            color: #584B3A; /* Dark brown text */
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+        .nav-link.active, .nav-link:hover {
+            background-color: #F5EFE0; /* Lighter beige */
+            border-left-color: #D2A679; /* Muted orange accent */
+            color: #3D352A;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .card {
+            background-color: #FFFBF2;
+            border: 1px solid #EAE0C8;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border-color: #D2A679;
+        }
+        .btn-primary {
+            background-color: #D2A679;
+            color: #FFFFFF;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #C1946A;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+            max-height: 50vh;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 500px;
+            }
+        }
+        .ethnogenesis-diagram .race-node {
+            border: 2px solid #D2A679;
+            background-color: #FFFBF2;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .ethnogenesis-diagram .race-node.active {
+            background-color: #F5EFE0;
+            border-color: #A0522D;
+            transform: scale(1.05);
+        }
+        .ethnogenesis-diagram .line {
+            background-color: #D2A679;
+            position: absolute;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="flex flex-col md:flex-row min-h-screen">
+        <!-- Sidebar Navigation -->
+        <nav class="w-full md:w-64 bg-[#F5EFE0] border-r border-[#EAE0C8] p-4 md:p-6 flex-shrink-0">
+            <h1 class="text-2xl font-bold text-[#3D352A] mb-8">Аудит Лору</h1>
+            <ul class="space-y-2">
+                <li><a href="#intro" class="nav-link block p-3 rounded-r-lg font-medium">Вступ</a></li>
+                <li><a href="#cosmology" class="nav-link block p-3 rounded-r-lg font-medium">Космологія</a></li>
+                <li><a href="#chronology" class="nav-link block p-3 rounded-r-lg font-medium">Хронологія</a></li>
+                <li><a href="#ethnogenesis" class="nav-link block p-3 rounded-r-lg font-medium">Народи</a></li>
+                <li><a href="#geopolitics" class="nav-link block p-3 rounded-r-lg font-medium">Геополітика</a></li>
+                <li><a href="#magic" class="nav-link block p-3 rounded-r-lg font-medium">Система Магії</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-4 sm:p-6 md:p-10">
+            <!-- Introduction Section -->
+            <section id="intro" class="content-section">
+                <h2 class="text-3xl font-bold mb-4 text-[#3D352A]">Інтерактивний аналіз світу Мундіс</h2>
+                <p class="text-lg mb-6">Ласкаво просимо до інтерактивного аудиту лору сетингу Мундіс. Цей застосунок перетворює текстовий аналіз на динамічне дослідження. Тут зібрані ключові неточності та суперечності, виявлені в історії та правилах світу, а також їхні уточнені версії. Використовуйте навігацію зліва, щоб переміщатися між тематичними розділами. Кожен розділ пропонує візуалізації та інтерактивні елементи, які допоможуть вам краще зрозуміти складні аспекти лору, відстежити зміни та побачити, як виправлення зміцнюють внутрішню логіку всесвіту.</p>
+                <div class="card">
+                    <h3 class="text-xl font-bold mb-2">Як користуватися?</h3>
+                    <p>Оберіть розділ у меню зліва. У кожному розділі ви знайдете пояснення, порівняння та інтерактивні елементи. Наводьте курсор, натискайте на графіки та діаграми, щоб отримати детальну інформацію. Мета цього інструменту — зробити процес аналізу та виправлення лору наочним та ефективним.</p>
+                </div>
+            </section>
+
+            <!-- Cosmology Section -->
+            <section id="cosmology" class="content-section">
+                <h2 class="text-3xl font-bold mb-2">Космологія та Міфологія</h2>
+                <p class="text-base mb-6">Цей розділ розглядає фундаментальні правила світу, міф про створення та походження ключових істот. Уточнення цих аспектів є критично важливим, оскільки вони є основою для всієї подальшої історії. Тут ви можете порівняти початкові суперечності та їхні узгоджені версії.</p>
+                
+                <div class="space-y-8">
+                    <div class="card">
+                        <h3 class="text-xl font-bold mb-3">1.1 Перший Катаклізм: Загибель Первісних</h3>
+                        <p class="mb-4">Початково існували дві суперечливі версії загибелі первісних: одна зображувала їх пасивними жертвами, інша — активними героями. Це створювало фундаментальну невизначеність. Уточнена версія пропонує єдиний, трагічний наратив.</p>
+                        <div class="text-center">
+                            <h4 class="font-semibold text-lg">Уточнена версія</h4>
+                            <p class="mt-2 max-w-2xl mx-auto">Первісні, істоти величезної сили, ненавмисно спричинили катаклізм. Усвідомивши катастрофу, вони в героїчному акті самопожертви зупинили повний колапс реальності ціною власного існування, врятувавши світи від остаточного знищення. Це зображує їх як трагічних, самосвідомих фігур.</p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="text-xl font-bold mb-3">1.2 Генезис міфічних істот та логіка бар'єру Вірфарену</h3>
+                        <p class="mb-4">Походження істот, народжених зі "скверни", та принципи роботи бар'єру Вірфарену були уточнені, щоб усунути логічні помилки. Тепер це не помилка, а ключовий елемент магічних законів світу.</p>
+                        <div class="grid md:grid-cols-2 gap-6 mt-4">
+                            <div>
+                                <h4 class="font-semibold text-lg text-center mb-2">Походження істот</h4>
+                                <ul class="list-disc list-inside space-y-1">
+                                    <li><b>Мундіс:</b> Дракони, Грифони, Хімаговара</li>
+                                    <li><b>Деорум:</b> Мантикори, Пегаси, Титани</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-lg text-center mb-2">Логіка Бар'єру Вірфарену</h4>
+                                <p>Бар'єр проникний для *будь-якої* істоти, народженої зі скверни, оскільки ця магія фундаментально протилежна магії небожителів і знаходиться поза їхнім контролем.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="text-xl font-bold mb-3">1.3 Небесний вихід: Уточнена хронологія</h3>
+                         <p class="mb-4">Хронологія прибуття істот з Деоруму була уточнена, що вирішило розбіжність у сотні років та встановило чітку точку відліку для впливу небожителів на історію Мундісу.</p>
+                        <div class="grid md:grid-cols-2 gap-6 mt-4 text-center">
+                            <div>
+                                <h4 class="font-semibold text-lg">Поступова міграція фей</h4>
+                                <p class="text-2xl font-bold mt-1">~1000-500 до ІК</p>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-lg">Прибуття 6 небожителів</h4>
+                                <p class="text-2xl font-bold mt-1">~512 до ІК</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Chronology Section -->
+            <section id="chronology" class="content-section">
+                <h2 class="text-3xl font-bold mb-2">Хронологічні розбіжності</h2>
+                <p class="text-base mb-6">Цей розділ присвячений виправленню помилок у датах правління монархів та ключових історичних подій. Такі розбіжності підривають довіру до літописів. Інтерактивний графік нижче візуалізує уточнені періоди правління. Наведіть курсор на смугу правителя, щоб побачити точні дати та короткий опис виправлення.</p>
+                <div class="card">
+                    <h3 class="text-xl font-bold mb-4">Хронологія правління монархів (Уточнена)</h3>
+                    <div class="chart-container">
+                        <canvas id="rulersChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Ethnogenesis Section -->
+            <section id="ethnogenesis" class="content-section">
+                <h2 class="text-3xl font-bold mb-2">Етногенез та Народи</h2>
+                <p class="text-base mb-6">Походження народів Мундісу містило логічні парадокси та надлишкові родовідні лінії. Інтерактивна схема нижче візуалізує уточнений етногенез. Натисніть на назву раси, щоб побачити її походження, деконструкцію родоводу та аналіз виявлених суперечностей.</p>
+                
+                <div class="flex flex-col lg:flex-row gap-8">
+                    <div class="ethnogenesis-diagram flex-grow card relative h-[600px] overflow-auto">
+                         <h3 class="text-xl font-bold mb-4 text-center">Схема походження рас</h3>
+                        <!-- Race Nodes -->
+                        <div id="node-люди" class="race-node absolute p-2 rounded-lg text-center" style="top: 20%; left: 5%;">Люди</div>
+                        <div id="node-дверґи" class="race-node absolute p-2 rounded-lg text-center" style="top: 70%; left: 5%;">Скельні дверґи</div>
+                        <div id="node-феї" class="race-node absolute p-2 rounded-lg text-center" style="top: 20%; left: 80%;">Феї</div>
+                        
+                        <div id="node-гноми" class="race-node absolute p-2 rounded-lg text-center" style="top: 45%; left: 25%;">Гноми</div>
+                        <div id="node-санґви" class="race-node absolute p-2 rounded-lg text-center" style="top: 20%; left: 45%;">Санґви</div>
+                        <div id="node-орманці" class="race-node absolute p-2 rounded-lg text-center" style="top: 55%; left: 65%;">Орманці</div>
+
+                        <div id="node-дварфи" class="race-node absolute p-2 rounded-lg text-center" style="top: 70%; left: 45%;">Дварфи</div>
+                        <div id="node-ільнри" class="race-node absolute p-2 rounded-lg text-center" style="top: 30%; left: 60%;">Ільнри</div>
+                        
+                        <!-- Connecting Lines will be drawn here by JS -->
+                    </div>
+                    <div class="lg:w-1/3">
+                        <div id="ethnogenesis-details" class="card sticky top-10">
+                            <h3 id="details-title" class="text-xl font-bold mb-2">Оберіть расу</h3>
+                            <p id="details-desc" class="mb-2">Натисніть на расу в схемі, щоб побачити деталі.</p>
+                            <div id="details-content" class="prose prose-sm max-w-none"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+             <!-- Geopolitics Section -->
+            <section id="geopolitics" class="content-section">
+                <h2 class="text-3xl font-bold mb-2">Геополітичні неузгодженості</h2>
+                <p class="text-base mb-6">Лор містив суперечності щодо формування держав та їхніх можливостей, зокрема, так званий "Мореплавський парадокс". Тут ви можете побачити порівняння суперечливих фактів та їхнє логічне вирішення.</p>
+                
+                <div class="space-y-8">
+                    <div class="card">
+                        <h3 class="text-xl font-bold mb-3">4.1 Мореплавський парадокс</h3>
+                        <p class="mb-4">Існувала фундаментальна суперечність між заявленим стримуванням розвитку мореплавства та описами масштабних морських битв. Цей парадокс тепер вирішено.</p>
+                        <div class="grid md:grid-cols-2 gap-6 mt-4">
+                            <div class="border-r pr-6 border-[#EAE0C8]">
+                                <h4 class="font-semibold text-lg mb-2">Правило світу</h4>
+                                <p>"...навмисне стримування розвитку мореплавства... до 500 року ІК воно обмежувалося прибережним рибальством та річковими сплавами."</p>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-lg mb-2">Суперечливі події</h4>
+                                <ul class="list-disc list-inside space-y-1">
+                                    <li><b>603-618 ІК:</b> Морське вторгнення Карифу.</li>
+                                    <li><b>615-634 ІК:</b> Десантна операція Арбору.</li>
+                                    <li><b>654 ІК:</b> "Битва тисячі вітрил".</li>
+                                </ul>
+                            </div>
+                        </div>
+                         <div class="text-center mt-6">
+                            <h4 class="font-semibold text-lg">Уточнення</h4>
+                            <p class="mt-2 max-w-2xl mx-auto">Парадокс вирішується визнанням цих подій **помилками в літописах**. Це підтверджує правило, що розвинене мореплавство в цей період було неможливим, а не скасовує його.</p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="text-xl font-bold mb-3">4.2 Формування держав: Хомаґна</h3>
+                        <p class="mb-4">Зміна назви держави з Гомаґни на Хомаґну та Хомаґнус виглядала слабко обґрунтованою. Уточнена версія пояснює це як природний наслідок культурно-лінгвістичних процесів.</p>
+                        <div class="flex items-center justify-center space-x-4 font-bold text-xl mt-4">
+                            <span>Гомаґна</span>
+                            <span class="text-2xl text-[#D2A679]">→</span>
+                            <span>Хомаґна</span>
+                            <span class="text-2xl text-[#D2A679]">→</span>
+                            <span>Хомаґнус</span>
+                        </div>
+                        <p class="text-center mt-4 max-w-3xl mx-auto">Ця трансформація відображає поступове поглинання культури гомів (Гомаґна) більш чисельним та культурно близьким симбіозом гірських та східних гномів (Хомаґна), що згодом було офіційно закріплено (Хомаґнус).</p>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Magic System Section -->
+            <section id="magic" class="content-section">
+                <h2 class="text-3xl font-bold mb-2">Система Магії</h2>
+                <p class="text-base mb-6">Розвиток стихійної магії містив логічні суперечності, зокрема, її розквіт після зникнення основного джерела — драконів. Уточнена логіка пояснює походження, поширення та еволюцію магії, усуваючи ці проблеми.</p>
+                <div class="card">
+                    <h3 class="text-xl font-bold mb-4">Уточнена логіка еволюції стихійної магії</h3>
+                    <div class="grid md:grid-cols-3 gap-6 text-center">
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                           <h4 class="font-bold text-lg">1. Носії, не джерело</h4>
+                           <p class="mt-2">Дракони були лише могутніми <b class="text-[#A0522D]">носіями</b> стихійної магії в Мундісі, а не її першоджерелом.</p>
+                        </div>
+                         <div class="p-4 bg-gray-50 rounded-lg">
+                           <h4 class="font-bold text-lg">2. Справжнє джерело</h4>
+                           <p class="mt-2">Стихійна магія походить зі світу <b class="text-[#A0522D]">Деорум</b>. Небожителі, будучи вихідцями звідти, володіли глибоким розумінням цієї магії.</p>
+                        </div>
+                         <div class="p-4 bg-gray-50 rounded-lg">
+                           <h4 class="font-bold text-lg">3. Логічний розвиток</h4>
+                           <p class="mt-2">Небожителі ділилися знаннями своєї батьківщини. Тому після винищення драконів магія не зникла, а була <b class="text-[#A0522D]">систематизована</b> в академіях, що пояснює її розквіт.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const navLinks = document.querySelectorAll('.nav-link');
+    const contentSections = document.querySelectorAll('.content-section');
+
+    function updateActiveState() {
+        const hash = window.location.hash || '#intro';
+        
+        navLinks.forEach(link => {
+            link.classList.toggle('active', link.getAttribute('href') === hash);
+        });
+
+        contentSections.forEach(section => {
+            section.classList.toggle('active', section.id === hash.substring(1));
+        });
+    }
+
+    navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.hash = link.getAttribute('href');
+            // The hashchange event will call updateActiveState
+        });
+    });
+
+    window.addEventListener('hashchange', updateActiveState);
+    updateActiveState();
+
+    // --- Chronology Chart ---
+    const rulersData = {
+        labels: ['Горам Арвід', 'Горад XII', 'Наступник Марцеліна', 'Іоан І Оберсул'],
+        reigns: [
+            { ruler: 'Горам Арвід', start: 211, end: 514, note: 'Правильні дати: 211-514. Період 175-211 належав попереднику.' },
+            { ruler: 'Горад XII', start: 679, end: 761, note: 'Наступник Горада XI. Його смерть у 761 спричинила кризу.' },
+            { ruler: 'Наступник Марцеліна', start: 489, end: 530, note: 'Кампанію 522 р. вів наступник Марцеліна Базорела, що усуває суперечність.' },
+            { ruler: 'Іоан І Оберсул', start: 324, end: 367, note: 'Правильні дати: 324-367. Коронований після смерті попередника у 324 р.' }
+        ]
+    };
+    const rulersChartCanvas = document.getElementById('rulersChart');
+    if (rulersChartCanvas) {
+        const ctx = rulersChartCanvas.getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: rulersData.reigns.map(r => r.ruler),
+                datasets: [{
+                    label: 'Період правління (роки ІК)',
+                    data: rulersData.reigns.map(r => [r.start, r.end]),
+                    backgroundColor: 'rgba(210, 166, 121, 0.6)',
+                    borderColor: 'rgba(210, 166, 121, 1)',
+                    borderWidth: 1,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { min: 100, max: 800, title: { display: true, text: 'Роки за Ільнбурзьким Календарем (ІК)' } }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => {
+                                const reign = rulersData.reigns[context.dataIndex];
+                                return `${reign.ruler}: ${reign.start} - ${reign.end} ІК. ${reign.note}`;
+                            }
+                        }
+                    },
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+    
+    // --- Ethnogenesis Diagram ---
+    const ethnogenesisData = {
+        'люди': { title: 'Люди', desc: 'Одна з первинних рас Мундісу.', content: '' },
+        'дверґи': { title: 'Скельні дверґи', desc: 'Одна з первинних рас Мундісу.', content: '' },
+        'феї': { title: 'Феї', desc: 'Істоти, що мігрували з Деоруму.', content: '' },
+        'гноми': { title: 'Гноми', desc: 'Нащадки людей та скельних дверґів.', content: '<b>Деконструйований родовід:</b> Люди + Скельні дверґи.<br><b>Аналіз:</b> Базова змішана раса.' },
+        'санґви': { title: 'Санґви', desc: 'Нащадки гномів та людей.', content: '<b>Деконструйований родовід:</b> (Люди + Скельні дверґи) + Люди.<br><b>Аналіз:</b> По суті, на 3/4 люди, на 1/4 дверґи. Створює питання про їх унікальність.' },
+        'орманці': { title: 'Орманці', desc: 'Нащадки фей та скельних дверґів.', content: '<b>Деконструйований родовід:</b> Феї + Скельні дверґи.<br><b>Аналіз:</b> Критична суперечність. В одному джерелі "інтегровані" арвами, в іншому — "винищені". Потребує остаточного вирішення.' },
+        'дварфи': { title: 'Дварфи', desc: 'Нащадки гномів, скельних дверґів та санґвів.', content: '<b>Деконструйований родовід:</b> (Люди + Скельні дверґи) + Скельні дверґи + ((Люди + Скельні дверґи) + Люди).<br><b>Аналіз:</b> Надлишковий родовід, що повністю складається з крові людей та дверґів. Їхня унікальність порівняно з гномами чи санґвами незрозуміла.' },
+        'ільнри': { title: 'Ільнри (ельфи)', desc: 'Нащадки фей та санґвів.', content: '<b>Деконструйований родовід:</b> Феї + ((Люди + Скельні дверґи) + Люди).<br><b>Аналіз:</b> Ельфи зі значною домішкою крові людей та дверґів, що пояснює їхні унікальні риси.' },
+    };
+
+    const diagram = document.querySelector('.ethnogenesis-diagram');
+    const nodes = diagram.querySelectorAll('.race-node');
+    const detailsTitle = document.getElementById('details-title');
+    const detailsDesc = document.getElementById('details-desc');
+    const detailsContent = document.getElementById('details-content');
+
+    nodes.forEach(node => {
+        node.addEventListener('click', () => {
+            const raceId = node.id.replace('node-', '');
+            const data = ethnogenesisData[raceId];
+
+            nodes.forEach(n => n.classList.remove('active'));
+            node.classList.add('active');
+
+            detailsTitle.textContent = data.title;
+            detailsDesc.textContent = data.desc;
+            detailsContent.innerHTML = data.content;
+        });
+    });
+
+    function createLine(node1Id, node2Id) {
+        if(!diagram) return;
+        const node1 = document.getElementById(node1Id);
+        const node2 = document.getElementById(node2Id);
+        if(!node1 || !node2) return;
+
+        const diagramRect = diagram.getBoundingClientRect();
+        const node1Rect = node1.getBoundingClientRect();
+        const node2Rect = node2.getBoundingClientRect();
+        
+        const x1 = (node1Rect.left + node1Rect.width / 2) - diagramRect.left + diagram.scrollLeft;
+        const y1 = (node1Rect.top + node1Rect.height / 2) - diagramRect.top + diagram.scrollTop;
+        const x2 = (node2Rect.left + node2Rect.width / 2) - diagramRect.left + diagram.scrollLeft;
+        const y2 = (node2Rect.top + node2Rect.height / 2) - diagramRect.top + diagram.scrollTop;
+
+        const distance = Math.hypot(x2 - x1, y2 - y1);
+        const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+        
+        const line = document.createElement('div');
+        line.className = 'line';
+        line.style.width = `${distance}px`;
+        line.style.height = '2px';
+        line.style.transform = `rotate(${angle}deg)`;
+        line.style.transformOrigin = '0 0';
+        line.style.top = `${y1}px`;
+        line.style.left = `${x1}px`;
+        diagram.appendChild(line);
+    }
+    
+    function drawAllLines(){
+        if(!diagram) return;
+        // Clear existing lines
+        diagram.querySelectorAll('.line').forEach(line => line.remove());
+        
+        // Draw lines for ethnogenesis diagram
+        createLine('node-люди', 'node-гноми');
+        createLine('node-дверґи', 'node-гноми');
+        createLine('node-гноми', 'node-санґви');
+        createLine('node-люди', 'node-санґви');
+        createLine('node-гноми', 'node-дварфи');
+        createLine('node-дверґи', 'node-дварфи');
+        createLine('node-санґви', 'node-дварфи');
+        createLine('node-феї', 'node-ільнри');
+        createLine('node-санґви', 'node-ільнри');
+        createLine('node-феї', 'node-орманці');
+        createLine('node-дверґи', 'node-орманці');
+    }
+
+    drawAllLines();
+    window.addEventListener('resize', drawAllLines);
+
+});
+
+</script>
+
+</body>
+</html>
